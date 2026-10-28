@@ -916,9 +916,17 @@ const post = {
   catalogue: () => lst()
 };
 
+window.fillDemoAccount = (email, password) => {
+  const form = document.querySelector('#auth-form');
+  if (!form) return;
+  form.e.value = email;
+  form.p.value = password;
+  toast(`Identifiants chargés pour ${email}`);
+};
+
 const sign = (mode) => `
   <div class="w sec">
-    <form class="card" style="max-width:480px" onsubmit="return ${mode === 'in' ? 'login' : 'reg'}(event)">
+    <form id="auth-form" class="card auth-card" style="max-width:480px" onsubmit="return ${mode === 'in' ? 'login' : 'reg'}(event)">
       <h2>${mode === 'in' ? 'Connexion' : 'Créer un compte'}</h2>
       ${mode === 'up' ? '<label>Nom ou pseudonyme</label><input name="n" required>' : ''}
       <label>Email</label>
@@ -949,7 +957,7 @@ const sign = (mode) => `
       </p>
       <p>
         ${mode === 'in'
-          ? '<a href="#/mdp">Mot de passe oublié ?</a> · <a href="#/inscription">Créer un compte</a><br><small>Comptes de démo : admin@towbam.test / Admin123! · modo@towbam.test / Admin123!</small>'
+          ? '<a href="#/mdp">Mot de passe oublié ?</a> · <a href="#/inscription">Créer un compte</a>'
           : '<a href="#/connexion">J’ai déjà un compte</a>'}
       </p>
     </form>
