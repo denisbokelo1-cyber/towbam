@@ -47,6 +47,67 @@ const save = () => {
   }
 };
 
+const normalizeRole = (value) => {
+  const role = String(value ?? '').trim().toLowerCase();
+  const map = {
+    lecteur: 'reader',
+    reader: 'reader',
+    auteur: 'author',
+    author: 'author',
+    mod: 'moderator',
+    moderator: 'moderator',
+    admin: 'admin'
+  };
+  return map[role] || role || 'reader';
+};
+
+const displayRole = (value) => {
+  const role = normalizeRole(value);
+  const map = {
+    reader: 'Lecteur',
+    author: 'Auteur',
+    moderator: 'Modérateur',
+    admin: 'Admin'
+  };
+  return map[role] || role;
+};
+
+const getApiBase = () => localStorage.getItem('towbam_api') || 'http://127.0.0.1:8000/api';
+
+const demoUsers = [
+  { id: 'demo-admin', name: 'Administrateur TOWBAM', email: 'admin@towbam.test', password: 'Admin123!', role: 'admin', country: 'Sénégal' },
+  { id: 'demo-moderator', name: 'Modérateur TOWBAM', email: 'modo@towbam.test', password: 'Admin123!', role: 'moderator', country: 'Cameroun' },
+  { id: 'demo-author', name: 'Auteur TOWBAM', email: 'auteur@towbam.test', password: 'Author123!', role: 'author', country: 'Maroc' },
+  { id: 'demo-reader', name: 'Lecteur TOWBAM', email: 'lecteur@towbam.test', password: 'Reader123!', role: 'reader', country: 'Côte d’Ivoire' }
+];
+
+const ensureDemoUsers = () => {
+  const saved = JSON.parse(localStorage.getItem('towbam_demo_users') || '[]');
+  if (!saved.length) {
+    localStorage.setItem('towbam_demo_users', JSON.stringify(demoUsers));
+  }
+};
+
+const genericFetch = async (path, { method = 'GET', body = null, token = null } = {}) => {
+  const base = getApiBase();
+  const response = await fetch(`${base}${path}`, {
+    method,
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
+    body: body ? JSON.stringify(body) : null
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.message || `Erreur ${response.status}`);
+  }
+
+  return data;
+};
+
 const toast = (message) => {
   const target = $('#toast');
   target.textContent = message;
@@ -118,7 +179,7 @@ const cn = (book) => book.ac || (A.find((author) => author.id == book.a) || {}).
 const books = () => B.concat(S.sub.filter((book) => book.st === 'approuvé'));
 const bk = (id) => books().find((book) => book.id == id);
 const own = (id) => S.lib.includes(+id);
-const role = () => S.u && S.u.role;
+const role = () => (S.u ? normalizeRole(S.u.role) : null);
 const stars = (value) => '★'.repeat(Math.round(value)) + '☆'.repeat(5 - Math.round(value));
 
 const cov = (book) => `
@@ -162,18 +223,142 @@ const nz = (value) => String(value)
 // ===================================================
 const V = {};
 
+function createShelfBackground() {
+  const width = 1800;
+  const height = 1000;
+  const shelfCount = window.innerWidth < 700 ? 4 : 6;
+  const seeded = (seed) => {
+    let value = seed % 2147483647;
+    if (value <= 0) value += 2147483646;
+    return () => {
+      value = (value * 16807) % 2147483647;
+      return (value - 1) / 2147483646;
+    };
+  };
+  const random = seeded(42);
+  const palette = ['#c0392b', '#f0c987', '#5d7a66', '#313746', '#d9b57f', '#f6f2ea', '#b05d50'];
+
+  let shelves = '';
+
+  for (let shelfIndex = 0; shelfIndex < shelfCount; shelfIndex += 1) {
+    const shelfY = 80 + shelfIndex * 155;
+    shelves += `<rect x="0" y="${shelfY + 8}" width="${width}" height="5" fill="#8c6a43" opacity="0.7" rx="2" />`;
+    shelves += `<rect x="0" y="${shelfY}" width="${width}" height="8" fill="#a67c4d" opacity="0.5" rx="3" />`;
+
+    let x = 40;
+    while (x < width - 50) {
+      const bookWidth = 18 + random() * 28;
+      const bookHeight = 90 + random() * 60;
+      const bookColor = palette[Math.floor(random() * palette.length)];
+      const titleX = x + 5;
+      const titleY = shelfY + 18;
+      const tilt = random() > 0.7 ? (random() > 0.5 ? 10 : -12) : 0;
+      const groupTransform = `translate(${x} ${shelfY + 22}) rotate(${tilt} ${bookWidth / 2} ${bookHeight / 2})`;
+      const spine = 5 + random() * 5;
+      shelves += `
+        <g transform="${groupTransform}">
+          <rect x="0" y="0" width="${bookWidth}" height="${bookHeight}" rx="4" fill="${bookColor}" opacity="0.96" />
+          <rect x="${bookWidth - spine}" y="0" width="${spine}" height="${bookHeight}" fill="rgba(27, 24, 18, 0.18)" />
+          <rect x="${Math.min(7, bookWidth * 0.2)}" y="8" width="${Math.max(6, bookWidth * 0.35)}" height="${Math.max(18, bookHeight * 0.18)}" fill="rgba(255,255,255,0.18)" rx="2" />
+          <text x="${titleX}" y="${titleY}" fill="rgba(9, 12, 18, 0.55)" font-size="10" font-family="Arial, sans-serif" transform="rotate(-90 ${titleX} ${titleY})">${Math.round(random() * 9) + 1}</text>
+        </g>
+      `;
+      x += bookWidth + 10 + random() * 12;
+    }
+  }
+
+  return `
+    <svg viewBox="0 0 ${width} ${height}" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <linearGradient id="shelfFade" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="rgba(246,242,234,0.8)" />
+          <stop offset="100%" stop-color="rgba(246,242,234,0.1)" />
+        </linearGradient>
+      </defs>
+      <rect width="${width}" height="${height}" fill="transparent" />
+      ${shelves}
+    </svg>
+  `;
+}
+
+if (document.querySelector('.shelf-bg')) {
+  document.querySelector('.shelf-bg').innerHTML = createShelfBackground();
+}
+
 function nav() {
-  const userLinks = S.u
-    ? `${S.lib.length ? '<a href="#/bibliotheque">Ma bibliothèque</a>' : ''}${['auteur', 'admin'].includes(role()) ? '<a href="#/auteur-espace">Espace auteur</a>' : ''}${['mod', 'admin'].includes(role()) ? '<a href="#/admin">Back-office</a>' : ''}<a href="#/compte">${esc(S.u.name)}</a>`
-    : '<a href="#/connexion">Connexion</a><a class="btn s" href="#/inscription">Créer un compte →</a>';
+  const initials = S.u ? (S.u.name || 'U').split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'U' : 'U';
+  const authorLink = S.u && ['author', 'admin'].includes(role()) ? '<a href="#/auteur-espace">Espace auteur</a>' : '';
+  const isConnected = Boolean(S.u);
 
   $('#nav').innerHTML = `
-    <a href="#/catalogue">Catalogue</a>
-    <a href="#/auteurs">Auteurs</a>
-    <a href="#/#approche">Notre approche</a>
-    <a href="#/panier">Panier (${S.cart.length})</a>
-    ${userLinks}
+    <div class="nav-main">
+      <a href="#/catalogue">Catalogue</a>
+      <a href="#/auteurs">Auteurs</a>
+      <a href="#/#approche">Notre approche</a>
+      <a href="#/panier">Panier (${S.cart.length})</a>
+    </div>
+    <div class="nav-user">
+      ${isConnected ? `
+        <div class="nav-user-wrap" id="account-menu-wrap">
+          <button class="user-avatar-button" type="button" id="account-menu-button" aria-label="Ouvrir le menu du compte" aria-expanded="false">${esc(initials)}</button>
+          <div class="user-menu" id="account-menu" role="menu" aria-label="Menu du compte">
+            <a href="#/compte" role="menuitem">Mon compte</a>
+            <a href="#/bibliotheque" role="menuitem">Ma bibliothèque</a>
+            ${authorLink}
+            <button type="button" id="logout-trigger" role="menuitem">Déconnexion</button>
+          </div>
+        </div>
+      ` : `
+        <a href="#/connexion" class="nav-user-link">Connexion</a>
+        <a class="btn s nav-user-button" href="#/inscription">Créer un compte →</a>
+      `}
+    </div>
   `;
+
+  if (!isConnected) return;
+
+  const menuWrap = document.getElementById('account-menu-wrap');
+  const menuButton = document.getElementById('account-menu-button');
+  const menu = document.getElementById('account-menu');
+  const logoutTrigger = document.getElementById('logout-trigger');
+
+  const closeMenu = () => {
+    if (!menuWrap || !menuButton || !menu) return;
+    menuWrap.classList.remove('open');
+    menuButton.setAttribute('aria-expanded', 'false');
+  };
+
+  if (menuButton) {
+    menuButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const isOpen = menuWrap.classList.contains('open');
+      menuWrap.classList.toggle('open', !isOpen);
+      menuButton.setAttribute('aria-expanded', String(!isOpen));
+    });
+  }
+
+  document.addEventListener('click', (event) => {
+    if (!menuWrap || !menu.contains(event.target) && !menuButton.contains(event.target)) {
+      closeMenu();
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeMenu();
+    }
+  });
+
+  if (logoutTrigger) {
+    logoutTrigger.addEventListener('click', () => {
+      S.u = null;
+      S.lib = [];
+      save();
+      location.hash = '#/';
+      nav();
+      toast('Déconnexion réussie');
+    });
+  }
 }
 
 function talents() {
@@ -190,54 +375,104 @@ let F = { q: '', g: '', l: '', c: '', pm: '', s: 'new' };
 V[''] = () => `
   <div class="w">
     <section class="hero">
-      <div>
+      <div class="hero-copy">
         <span class="pill">● Une nouvelle maison pour les histoires</span>
         <h1>Des histoires <em>qui méritent d’être lues</em></h1>
-        <p class="lead">TOWBAM rapproche les lecteurs des auteurs émergents d’Afrique et de leurs diasporas. Lisez un extrait, achetez, suivez vos auteurs.</p>
-        <p>
-          <a class="btn" href="#/inscription">Rejoindre TOWBAM →</a>
-          &nbsp;
-          <a href="#/#approche">Découvrir notre démarche ↓</a>
-        </p>
+        <p class="lead">TOWBAM réunit les lecteurs et les auteurs africains autour d’une plateforme claire, crédible et visuellement premium pour découvrir, soutenir et faire grandir les talents.</p>
+        <div class="hero-cta">
+          <a class="btn" href="#/inscription">Rejoindre TOWBAM</a>
+          <a class="btn g" href="#/#approche">Découvrir notre démarche</a>
+        </div>
+        <div class="stat-strip">
+          <div>
+            <strong>350+</strong>
+            <span>Auteurs</span>
+          </div>
+          <div>
+            <strong>18K</strong>
+            <span>Lecteurs</span>
+          </div>
+          <div>
+            <strong>95%</strong>
+            <span>Contenu validé</span>
+          </div>
+        </div>
       </div>
 
-      <div class="art">
+      <div class="art" aria-label="Mise en avant des livres">
         <svg viewBox="0 0 400 460" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
           <circle cx="270" cy="120" r="46" fill="#f0c987" opacity=".9" />
           <path d="M60 330l140-40 140 40-140 50z" fill="#f6f2ea" />
           <path d="M200 290v90" stroke="#c0392b" stroke-width="10" />
           <path d="M230 318q40-12 80 0" stroke="#1f3f8f" stroke-width="12" fill="none" />
         </svg>
-        <p>Un compte aujourd’hui.<br>De nouvelles lectures demain.</p>
+        <div class="art-meta">
+          <span>Éditions de demain</span>
+          <p>Un compte aujourd’hui.<br>De nouvelles lectures demain.</p>
+        </div>
       </div>
     </section>
   </div>
 
-  <section class="sec">
+  <section class="sec soft-panel">
     <div class="w">
-      <h2>Nouveaux talents</h2>
-      <p class="lead">Une rotation équitable met chaque nouvel auteur en avant, chacun son tour.</p>
-      <div class="grid">${talents().slice(0, 6).map(card).join('')}</div>
-      <p><a class="btn g" href="#/catalogue">Voir tout le catalogue</a></p>
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Pourquoi TOWBAM</span>
+          <h2>Une expérience littéraire pensée pour durer.</h2>
+        </div>
+      </div>
+      <div class="mini-grid">
+        <article class="mini-card">
+          <span class="mini-emoji">✦</span>
+          <h3>Découverte qualitative</h3>
+          <p>Chaque titre est pensé pour être trouvé, compris et recommandé avec clarté.</p>
+        </article>
+        <article class="mini-card">
+          <span class="mini-emoji">◎</span>
+          <h3>Équipe de modération</h3>
+          <p>Des décisions transparentes et une qualité éditoriale forte pour chaque publication.</p>
+        </article>
+        <article class="mini-card">
+          <span class="mini-emoji">↗</span>
+          <h3>Monétisation juste</h3>
+          <p>Les auteurs sont valorisés, avec une logique de rémunération lisible et équilibrée.</p>
+        </article>
+      </div>
     </div>
   </section>
 
-  <section class="sec" id="approche">
+  <section class="sec">
+    <div class="w section-head">
+      <div>
+        <span class="eyebrow">Nouveaux talents</span>
+        <h2>Des voix qui prennent de la hauteur.</h2>
+      </div>
+      <p class="lead">Une rotation équitable met chaque auteur en avant, pour faire place à des histoires fortes et diverses.</p>
+    </div>
+    <div class="w">
+      <div class="grid">${talents().slice(0, 6).map(card).join('')}</div>
+      <div class="section-actions"><a class="btn g" href="#/catalogue">Voir tout le catalogue</a></div>
+    </div>
+  </section>
+
+  <section class="sec soft-panel" id="approche">
     <div class="w two">
       <div>
+        <span class="eyebrow">Notre approche</span>
         <h2>La confiance avant le catalogue.</h2>
-        <p class="lead">TOWBAM se construit par étapes. Nous posons les bases d’une communauté où lecteurs et auteurs se retrouvent avec clarté.</p>
-        <a href="#/inscription" style="color:var(--red);font-weight:700">Créer mon compte →</a>
+        <p class="lead">TOWBAM bâtit une communauté où les lecteurs découvrent des œuvres avec clarté, et où les auteurs sont accompagnés sans confusion ni bruit.</p>
+        <a class="text-link" href="#/inscription">Créer mon compte →</a>
       </div>
 
-      <div>
+      <div class="feature-stack">
         ${[
-          ['Des voix à rencontrer', 'Un espace où les lecteurs trouvent des écritures émergentes, au-delà des circuits habituels.'],
-          ['Des auteurs reconnus', 'Chaque candidature d’auteur suit une démarche claire. Les lecteurs gardent leur place pendant l’examen.'],
-          ['Un compte de confiance', 'Vos préférences et votre identité restent au cœur d’une expérience pensée pour durer.']
+          ['Des voix à rencontrer', 'Une plateforme conçue pour faire émerger des écrits qui sortent des sentiers battus.'],
+          ['Des auteurs reconnus', 'Chaque candidature suit une procédure simple et transparente, avec une modération sérieuse.'],
+          ['Un compte de confiance', 'Vos préférences, votre identité et votre bibliothèque restent au cœur d’une expérience pensée pour durer.']
         ].map((item, index) => `
-          <div class="row">
-            <span style="color:var(--mut)">0${index + 1}</span>
+          <div class="feature-row">
+            <span class="feature-number">0${index + 1}</span>
             <div>
               <h3>${item[0]}</h3>
               <p>${item[1]}</p>
@@ -248,12 +483,53 @@ V[''] = () => `
     </div>
   </section>
 
+  <section class="sec">
+    <div class="w">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Temoignages</span>
+          <h2>Ce que racontent nos lecteurs et auteurs.</h2>
+        </div>
+      </div>
+      <div class="quote-grid">
+        <article class="quote-card">
+          <p>“TOWBAM a l’air d’une vraie maison d’édition, mais en ligne. J’y ai découvert des voix que je n’aurais jamais trouvées ailleurs.”</p>
+          <div class="quote-author">
+            <strong>Amine D.</strong>
+            <span>Lecteur</span>
+          </div>
+        </article>
+        <article class="quote-card">
+          <p>“Le parcours est lisible, le processus de soumission est crédible et l’espace de publication donne envie d’écrire plus fort.”</p>
+          <div class="quote-author">
+            <strong>Salma B.</strong>
+            <span>Auteure</span>
+          </div>
+        </article>
+        <article class="quote-card">
+          <p>“Le produit a une vraie identité. Il inspire confiance, et c’est crucial dans la littérature émergente.”</p>
+          <div class="quote-author">
+            <strong>Karim M.</strong>
+            <span>Modérateur</span>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
   <div class="w">
     <section class="navy">
-      <h2>Votre écriture a sa place dans la conversation.</h2>
-      <p>Créez un compte lecteur, puis déposez une demande pour rejoindre l’espace des auteurs. Chaque demande est examinée avec attention.</p>
-      <p><a class="btn y" href="#/inscription">Commencer mon inscription →</a></p>
-      <p style="font-size:.9rem">✓ Vous restez lecteur pendant l’examen &nbsp; ✓ Aucune publication automatique &nbsp; ✓ Rémunération transparente (70 % auteur)</p>
+      <div class="navy-inner">
+        <div>
+          <span class="eyebrow light">Rejoindre TOWBAM</span>
+          <h2>Votre écriture a sa place dans la conversation.</h2>
+        </div>
+        <div class="navy-copy">
+          <p>Créez un compte lecteur, puis déposez une demande pour rejoindre l’espace des auteurs. Chaque demande est examinée avec attention.</p>
+          <p class="navy-bullets">✓ Vous restez lecteur pendant l’examen &nbsp; ✓ Aucune publication automatique &nbsp; ✓ Rémunération transparente (70 % auteur)</p>
+          <p><a class="btn y" href="#/inscription">Commencer mon inscription</a></p>
+        </div>
+      </div>
     </section>
   </div>
 `;
@@ -428,7 +704,7 @@ function rev(event, id) {
 }
 
 const authors = () => A.concat(
-  S.users.filter((user) => user.role === 'auteur' && !user.sus)
+  S.users.filter((user) => normalizeRole(user.role) === 'author' && !user.sus)
     .map((user) => ({
       id: user.id,
       n: user.name,
@@ -652,8 +928,8 @@ const sign = (mode) => `
       ${mode === 'up' ? `
         <label>Je suis</label>
         <select name="r">
-          <option value="lecteur">Lecteur (partout dans le monde)</option>
-          <option value="auteur">Auteur africain</option>
+          <option value="reader">Lecteur (partout dans le monde)</option>
+          <option value="author">Auteur africain</option>
         </select>
         <label>Pays</label>
         <input name="c" list="cl" required>
@@ -673,7 +949,7 @@ const sign = (mode) => `
       </p>
       <p>
         ${mode === 'in'
-          ? '<a href="#/mdp">Mot de passe oublié ?</a> · <a href="#/inscription">Créer un compte</a><br><small>Démo : un email contenant « admin » ou « modo » ouvre le back-office.</small>'
+          ? '<a href="#/mdp">Mot de passe oublié ?</a> · <a href="#/inscription">Créer un compte</a><br><small>Comptes de démo : admin@towbam.test / Admin123! · modo@towbam.test / Admin123!</small>'
           : '<a href="#/connexion">J’ai déjà un compte</a>'}
       </p>
     </form>
@@ -695,12 +971,12 @@ V.mdp = () => `
 `;
 
 function mk(name, email, roleName, country) {
-  const userRole = /admin/.test(email) ? 'admin' : /modo/.test(email) ? 'mod' : roleName;
+  const normalizedRole = normalizeRole(/admin/.test(email) ? 'admin' : /modo/.test(email) ? 'moderator' : roleName);
   const user = {
     id: 'u' + Date.now() + Math.floor(Math.random() * 99),
     name,
     email,
-    role: userRole,
+    role: normalizedRole,
     country,
     bio: ''
   };
@@ -709,31 +985,59 @@ function mk(name, email, roleName, country) {
   return user;
 }
 
-function login(event) {
+async function login(event) {
   event.preventDefault();
   const form = event.target;
+  const email = form.e.value.trim();
+  const password = form.p.value;
 
-  let user = S.users.find((entry) => entry.email === form.e.value);
-  if (!user) user = mk(form.e.value.split('@')[0], form.e.value, 'lecteur', '—');
+  try {
+    const response = await genericFetch('/login', { method: 'POST', body: { email, password } }).catch(() => null);
+    if (response && response.user) {
+      const user = {
+        id: response.user.id,
+        name: response.user.name,
+        email: response.user.email,
+        role: normalizeRole(response.user.role),
+        country: response.user.country || '—',
+        bio: response.user.bio || ''
+      };
+      S.u = user;
+      S.users = [...S.users.filter((entry) => entry.email !== email), user];
+      localStorage.setItem('towbam_token', response.token || '');
+      save();
+      nav();
+      location.hash = '#/';
+      toast('Bienvenue ' + user.name);
+      return false;
+    }
 
-  if (user.sus) {
-    toast('Compte suspendu. Contactez TOWBAM.');
+    ensureDemoUsers();
+    const localUsers = JSON.parse(localStorage.getItem('towbam_demo_users') || '[]');
+    const user = localUsers.find((entry) => entry.email.toLowerCase() === email.toLowerCase());
+    if (!user || user.password !== password) {
+      toast('Identifiants invalides');
+      return false;
+    }
+
+    S.u = { ...user, role: normalizeRole(user.role), bio: '' };
+    S.users = [...S.users.filter((entry) => entry.email !== email), S.u];
+    save();
+    nav();
+    location.hash = '#/';
+    toast('Bienvenue ' + S.u.name);
+    return false;
+  } catch (error) {
+    toast(error.message || 'Erreur d’authentification');
     return false;
   }
-
-  S.u = user;
-  save();
-  location.hash = '#/';
-  nav();
-  toast('Bienvenue ' + user.name);
-  return false;
 }
 
 function reg(event) {
   event.preventDefault();
   const form = event.target;
 
-  if (form.r.value === 'auteur' && !AF.includes(form.c.value)) {
+  if (form.r.value === 'author' && !AF.includes(form.c.value)) {
     toast('Le statut d’auteur est ouvert aux auteurs africains. Choisissez un pays africain ou le rôle lecteur.');
     return false;
   }
@@ -743,11 +1047,12 @@ function reg(event) {
     return false;
   }
 
-  S.u = mk(form.n.value, form.e.value, form.r.value, form.c.value);
+  const nextUser = mk(form.n.value, form.e.value, form.r.value, form.c.value);
+  S.u = nextUser;
   save();
   nav();
   location.hash = '#/';
-  toast('Compte créé. Email de vérification envoyé.');
+  toast('Compte créé. Vous êtes connecté.');
   return false;
 }
 
@@ -760,7 +1065,7 @@ V.compte = () => {
     <div class="w sec">
       <form class="card" style="max-width:560px" onsubmit="return prof(event)">
         <h2>Mon compte</h2>
-        <span class="tag">${esc(user.role)}</span>
+        <span class="tag">${esc(displayRole(user.role))}</span>
         <label>Nom / pseudonyme</label>
         <input name="n" value="${esc(user.name)}">
         <label>Pays</label>
@@ -769,7 +1074,7 @@ V.compte = () => {
         <textarea name="b">${esc(user.bio || '')}</textarea>
         <label>Lien (site, réseau)</label>
         <input name="l" value="${esc(user.link || '')}">
-        ${user.role === 'auteur' ? `
+        ${normalizeRole(user.role) === 'author' ? `
           <label>Pièce d’identité (stockage sécurisé côté serveur)</label>
           <input type="file">
           <label>Moyen de retrait (mobile money ou IBAN)</label>
@@ -816,7 +1121,7 @@ const bal = () => {
 };
 
 V['auteur-espace'] = () => {
-  if (need(['auteur', 'admin'])) return '';
+  if (need(['author', 'admin'])) return '';
 
   const myWorks = S.sub.filter((work) => work.u === S.u.id);
   const [revenue, payouts, balance] = bal();
@@ -1027,10 +1332,11 @@ function csv() {
 let MT = 's';
 
 V.admin = () => {
-  if (need(['mod', 'admin'])) return '';
+  if (need(['moderator', 'admin'])) return '';
 
   const mt = (key, label) => `<button class="btn ${MT === key ? 'on' : ''}" onclick="MT='${key}';go()">${label}</button>`;
   const isAdmin = role() === 'admin';
+  const isModerator = role() === 'moderator';
   let content = '';
 
   if (MT === 'd') {
@@ -1086,7 +1392,7 @@ V.admin = () => {
           ${S.users.map((user) => `
             <tr>
               <td>${esc(user.name)}<br><small>${esc(user.email)}</small></td>
-              <td>${user.role}</td>
+              <td>${displayRole(user.role)}</td>
               <td>
                 <button class="btn g s" onclick="sus('${user.id}')">${user.sus ? 'Réactiver' : 'Suspendre'}</button>
               </td>
@@ -1188,6 +1494,7 @@ V.page = (pageName) => {
       <div class="w sec">
         <form class="card" style="max-width:520px" onsubmit="return msg(event,${isReport})">
           <h2>${isReport ? 'Signaler un contenu' : 'Nous contacter'}</h2>
+          ${isReport ? '' : '<p class="lead" style="margin:0 0 18px"><a href="mailto:contact@towbam.africa" style="color:var(--red)">contact@towbam.africa</a></p>'}
           <label>${isReport ? 'Titre ou lien du contenu' : 'Email'}</label>
           <input name="a" required>
           <label>Message</label>
