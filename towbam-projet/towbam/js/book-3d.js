@@ -61,7 +61,7 @@
                 </div>
               </div>
 
-              <!-- Bloc de droite fixe (page de fond sous la pile - Page 49) -->
+              <!-- Bloc de droite fixe (page de fond sous la pile - Page 50) -->
               <div class="book-right-block">
                 <div class="tranche-right"></div>
                 <div class="tranche-top"></div>
@@ -70,12 +70,11 @@
                   <div class="page-texture"></div>
                   <div class="page-content">
                     <div class="page-header">
-                      <span class="page-folio">49</span>
-                      <span class="page-tag">Épilogue</span>
+                      <span class="page-folio">50</span>
+                      <span class="page-tag">TOWBAM Éditions</span>
                     </div>
                     <div class="page-body">
-                      <h5 class="page-sub">L'Héritage Vivant</h5>
-                      <p class="page-lead">Les histoires se transmettent de génération en génération, portées par l’encre et la voix des auteurs.</p>
+                      <h5 class="page-sub">Épilogue</h5>
                       <div class="page-lines">
                         <span class="pline pline-full"></span>
                         <span class="pline pline-mid"></span>
