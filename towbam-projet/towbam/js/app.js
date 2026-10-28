@@ -291,29 +291,69 @@ function nav() {
   const isConnected = Boolean(S.u);
 
   $('#nav').innerHTML = `
-    <div class="nav-main">
-      <a href="#/catalogue">Catalogue</a>
-      <a href="#/auteurs">Auteurs</a>
-      <a href="#/#approche">Notre approche</a>
-      <a href="#/panier">Panier (${S.cart.length})</a>
-    </div>
-    <div class="nav-user">
-      ${isConnected ? `
-        <div class="nav-user-wrap" id="account-menu-wrap">
-          <button class="user-avatar-button" type="button" id="account-menu-button" aria-label="Ouvrir le menu du compte" aria-expanded="false">${esc(initials)}</button>
-          <div class="user-menu" id="account-menu" role="menu" aria-label="Menu du compte">
-            <a href="#/compte" role="menuitem">Mon compte</a>
-            <a href="#/bibliotheque" role="menuitem">Ma bibliothèque</a>
-            ${authorLink}
-            <button type="button" id="logout-trigger" role="menuitem">Déconnexion</button>
+    <button class="nav-toggle" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="nav-panel">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+    <div class="nav-panel" id="nav-panel">
+      <div class="nav-main">
+        <a href="#/catalogue">Catalogue</a>
+        <a href="#/auteurs">Auteurs</a>
+        <a href="#/#approche">Notre approche</a>
+        <a href="#/panier">Panier (${S.cart.length})</a>
+      </div>
+      <div class="nav-user">
+        ${isConnected ? `
+          <div class="nav-user-wrap" id="account-menu-wrap">
+            <button class="user-avatar-button" type="button" id="account-menu-button" aria-label="Ouvrir le menu du compte" aria-expanded="false">${esc(initials)}</button>
+            <div class="user-menu" id="account-menu" role="menu" aria-label="Menu du compte">
+              <a href="#/compte" role="menuitem">Mon compte</a>
+              <a href="#/bibliotheque" role="menuitem">Ma bibliothèque</a>
+              ${authorLink}
+              <button type="button" id="logout-trigger" role="menuitem">Déconnexion</button>
+            </div>
           </div>
-        </div>
-      ` : `
-        <a href="#/connexion" class="nav-user-link">Connexion</a>
-        <a class="btn s nav-user-button" href="#/inscription">Créer un compte →</a>
-      `}
+        ` : `
+          <a href="#/connexion" class="nav-user-link">Connexion</a>
+          <a class="btn s nav-user-button" href="#/inscription">Créer un compte →</a>
+        `}
+      </div>
     </div>
   `;
+
+  const navRoot = document.getElementById('nav');
+  const navToggle = navRoot && navRoot.querySelector('.nav-toggle');
+  const navPanel = navRoot && navRoot.querySelector('.nav-panel');
+
+  if (navToggle && navPanel) {
+    const closeMobileNav = () => {
+      navRoot.classList.remove('open');
+      navToggle.setAttribute('aria-expanded', 'false');
+    };
+
+    navToggle.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const isOpen = navRoot.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    navPanel.querySelectorAll('a').forEach((link) => {
+      link.addEventListener('click', () => closeMobileNav());
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!navRoot.contains(event.target)) {
+        closeMobileNav();
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeMobileNav();
+      }
+    });
+  }
 
   if (!isConnected) return;
 
