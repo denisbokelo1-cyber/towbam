@@ -401,6 +401,13 @@ function nav() {
   }
 }
 
+function initSplashScreen() {
+  if (window.TowbamBook3D && typeof window.TowbamBook3D.initSplashScreen === 'function') {
+    window.TowbamBook3D.initSplashScreen();
+    return;
+  }
+}
+
 function talents() {
   const day = Math.floor(Date.now() / 86400000);
   return books()
@@ -439,18 +446,16 @@ V[''] = () => `
         </div>
       </div>
 
-      <div class="art" aria-label="Mise en avant des livres">
-        <svg viewBox="0 0 400 460" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-          <circle cx="270" cy="120" r="46" fill="#f0c987" opacity=".9" />
-          <path d="M60 330l140-40 140 40-140 50z" fill="#f6f2ea" />
-          <path d="M200 290v90" stroke="#c0392b" stroke-width="10" />
-          <path d="M230 318q40-12 80 0" stroke="#1f3f8f" stroke-width="12" fill="none" />
-        </svg>
-        <div class="art-meta">
-          <span>Éditions de demain</span>
-          <p>Un compte aujourd’hui.<br>De nouvelles lectures demain.</p>
-        </div>
-      </div>
+      ${window.TowbamBook3D && typeof window.TowbamBook3D.getHeroBookHTML === 'function'
+        ? window.TowbamBook3D.getHeroBookHTML()
+        : `
+          <div class="book-stage" aria-label="Livre littéraire animé">
+            <div class="book-cover">
+              <span class="cover-label">TOWBAM</span>
+              <span class="cover-title">Des histoires<br>qui méritent<br>d’être lues</span>
+            </div>
+          </div>
+        `}
     </section>
   </div>
 
@@ -1614,4 +1619,5 @@ document.addEventListener('click', (event) => {
 });
 
 go();
+initSplashScreen();
 

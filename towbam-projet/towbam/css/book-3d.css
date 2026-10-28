@@ -1,0 +1,1438 @@
+/* ==========================================================================
+   TOWBAM — ANIMATION 3D RÉALISTE DU LIVRE & SPLASH SCREEN ÉDITORIAL
+   Design & Mathématiques 3D : Rendu physique, texture papier ivoire, reliure,
+   feuilletage naturel avec courbure, croisement 3D et responsive complet.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. VARIABLES & FONDATION 3D
+   -------------------------------------------------------------------------- */
+:root {
+  --book-carmine: #851e1f;
+  --book-carmine-dark: #4e0f10;
+  --book-carmine-light: #ab2c2a;
+  --book-ivory-page: #fcf9f2;
+  --book-ivory-dark: #eee4d1;
+  --book-ivory-tranche: #dfcfb2;
+  --book-gold: #f0c987;
+  --book-gold-deep: #b3883b;
+  --book-spine-width: 22px;
+  --book-page-width: 200px;
+  --book-page-height: 295px;
+  --book-cover-depth: 4px;
+}
+
+/* --------------------------------------------------------------------------
+   2. CONTENEUR HERO (BOOK-STAGE)
+   -------------------------------------------------------------------------- */
+.book-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 480px;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  perspective: 1500px;
+  perspective-origin: 50% 46%;
+  isolation: isolate;
+  user-select: none;
+  overflow: hidden;
+}
+
+/* Lueur d'ambiance chaude et littéraire */
+.book-ambient-glow {
+  position: absolute;
+  width: 380px;
+  height: 380px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(208, 146, 89, 0.18) 0%,
+    rgba(192, 57, 43, 0.08) 42%,
+    rgba(15, 18, 25, 0) 70%
+  );
+  filter: blur(24px);
+  z-index: 0;
+  pointer-events: none;
+  transform: translateY(20px);
+}
+
+/* Halo géométrique subtil en arrière-plan */
+.book-ambient-ring {
+  position: absolute;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  border: 1px solid rgba(240, 201, 135, 0.12);
+  box-shadow: inset 0 0 40px rgba(192, 57, 43, 0.04);
+  transform: rotateX(66deg) translateY(36px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Scène 3D */
+.book-3d-scene {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 440px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-style: preserve-3d;
+  z-index: 1;
+}
+
+/* Rig d'inclinaison et respiration flottante */
+.book-3d-rig {
+  position: relative;
+  width: calc(var(--book-page-width) * 2 + var(--book-spine-width));
+  height: var(--book-page-height);
+  transform-style: preserve-3d;
+  transform: rotateX(20deg) rotateY(-18deg) rotateZ(-1.5deg);
+  animation: bookBreathingFloat 6.5s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Ombre portée au sol réaliste avec occlusion ambiante */
+.book-ground-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: -46px;
+  width: 440px;
+  height: 76px;
+  transform: translateX(-50%) rotateX(82deg);
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(10, 12, 18, 0.52) 0%,
+    rgba(10, 12, 18, 0.22) 50%,
+    transparent 75%
+  );
+  filter: blur(18px);
+  pointer-events: none;
+  animation: bookShadowPulse 6.5s ease-in-out infinite;
+}
+
+/* Ombre de pliure sous le livre */
+.book-crease-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: -22px;
+  width: 200px;
+  height: 22px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.4) 0%, transparent 70%);
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   3. CORPS PHYSIQUE DU LIVRE (3D BOOK CORE)
+   -------------------------------------------------------------------------- */
+.book-physical {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+}
+
+/* Plat arrière du livre (back cover) */
+.book-back-cover {
+  position: absolute;
+  inset: -3px;
+  border-radius: 8px 10px 10px 8px;
+  background: linear-gradient(135deg, #3d0c0e 0%, #1a0808 60%, #461415 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 16px 32px rgba(0, 0, 0, 0.35);
+  transform: translateZ(-16px);
+}
+
+/* Tranchefile / Reliure centrale 3D (spine pillar) */
+.book-spine-pillar {
+  position: absolute;
+  left: calc(50% - (var(--book-spine-width) / 2));
+  top: -2px;
+  bottom: -2px;
+  width: var(--book-spine-width);
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    #3b0c0d 0%,
+    #5f1416 20%,
+    #8b1f21 50%,
+    #5f1416 80%,
+    #330a0b 100%
+  );
+  box-shadow:
+    inset 0 0 8px rgba(0, 0, 0, 0.6),
+    0 0 6px rgba(0, 0, 0, 0.4);
+  transform: translateZ(-2px);
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+}
+
+/* Nerfs de reliure dorés (raised ribs) */
+.spine-rib {
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, #996e25 0%, #f0c987 50%, #996e25 100%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  opacity: 0.85;
+}
+
+/* Tranchefile aux extrémités (headbands) */
+.spine-headband {
+  position: absolute;
+  width: 90%;
+  height: 4px;
+  background: repeating-linear-gradient(
+    90deg,
+    #8b1f21 0px,
+    #8b1f21 3px,
+    #fdf6e7 3px,
+    #fdf6e7 6px
+  );
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.3);
+}
+.spine-headband.top { top: 1px; border-radius: 2px 2px 0 0; }
+.spine-headband.bottom { bottom: 1px; border-radius: 0 0 2px 2px; }
+
+/* --------------------------------------------------------------------------
+   4. BLOCS DE PAGES GAUCHE ET DROITE (BEDS & TRANCHES)
+   -------------------------------------------------------------------------- */
+/* Page de gauche (lit de pages déjà tournées) */
+.book-left-bed {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--book-page-width);
+  height: var(--book-page-height);
+  transform-origin: right center;
+  transform: rotateY(3deg) translateZ(-4px);
+  transform-style: preserve-3d;
+  z-index: 8;
+}
+
+/* Page de droite (bloc restant) */
+.book-right-block {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: var(--book-page-width);
+  height: var(--book-page-height);
+  transform-origin: left center;
+  transform: rotateY(-3deg) translateZ(-4px);
+  transform-style: preserve-3d;
+  z-index: 2;
+}
+
+/* Tranches réalistes en 3D (fore-edge avec texture papier compressé) */
+.tranche-right {
+  position: absolute;
+  top: 0;
+  right: -14px;
+  width: 16px;
+  height: 100%;
+  background: repeating-linear-gradient(
+    to bottom,
+    #cbba97 0px,
+    #cbba97 1px,
+    #f6ede0 1px,
+    #f6ede0 3px
+  );
+  transform-origin: left center;
+  transform: rotateY(90deg) translateZ(0);
+  box-shadow: inset -3px 0 6px rgba(0, 0, 0, 0.22);
+  border-radius: 0 2px 2px 0;
+}
+
+.tranche-top {
+  position: absolute;
+  top: -14px;
+  left: 0;
+  width: 100%;
+  height: 16px;
+  background: repeating-linear-gradient(
+    to right,
+    #cbba97 0px,
+    #cbba97 1px,
+    #f6ede0 1px,
+    #f6ede0 3px
+  );
+  transform-origin: bottom center;
+  transform: rotateX(90deg) translateZ(0);
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.2);
+}
+
+.tranche-bottom {
+  position: absolute;
+  bottom: -14px;
+  left: 0;
+  width: 100%;
+  height: 16px;
+  background: repeating-linear-gradient(
+    to right,
+    #cbba97 0px,
+    #cbba97 1px,
+    #f6ede0 1px,
+    #f6ede0 3px
+  );
+  transform-origin: top center;
+  transform: rotateX(-90deg) translateZ(0);
+  box-shadow: inset 0 -3px 6px rgba(0, 0, 0, 0.22);
+}
+
+/* Surface des pages ouvertes (papier ivoire épais 100% opaque) */
+.bed-surface-left,
+.bed-surface-right {
+  position: absolute;
+  inset: 0;
+  background-color: #fcf9f2 !important;
+  background-image: linear-gradient(135deg, #fdfaf3 0%, #f6eee0 75%, #ece1cd 100%) !important;
+  border-radius: 4px 6px 6px 4px;
+  box-shadow:
+    inset 0 0 0 1px rgba(110, 85, 55, 0.12),
+    0 10px 22px rgba(0, 0, 0, 0.16);
+  display: flex;
+  flex-direction: column;
+  padding: 22px 20px 18px;
+}
+
+.bed-surface-left {
+  border-radius: 6px 4px 4px 6px;
+  padding-right: 26px; /* Gouttière centrale */
+}
+
+.bed-surface-right {
+  border-radius: 4px 6px 6px 4px;
+  padding-left: 26px; /* Gouttière centrale */
+}
+
+/* Ombres de pliure centrale (gouttière / reliure) */
+.gutter-shadow-left {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 32px;
+  height: 100%;
+  background: linear-gradient(to right, transparent 0%, rgba(35, 20, 10, 0.12) 50%, rgba(20, 10, 5, 0.42) 100%);
+  pointer-events: none;
+}
+
+.gutter-shadow-right {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 32px;
+  height: 100%;
+  background: linear-gradient(to left, transparent 0%, rgba(35, 20, 10, 0.12) 50%, rgba(20, 10, 5, 0.42) 100%);
+  pointer-events: none;
+}
+
+/* Texture de papier ivoire subtile */
+.page-texture {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(140, 105, 60, 0.04) 1px, transparent 0);
+  background-size: 8px 8px;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+/* --------------------------------------------------------------------------
+   5. CONTENU ÉDITORIAL TYPOGRAPHIQUE SUR LES PAGES
+   -------------------------------------------------------------------------- */
+.page-content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #2b251f;
+  font-family: var(--sans, 'DM Sans', sans-serif);
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8c7b69;
+  border-bottom: 1px solid rgba(140, 115, 85, 0.18);
+  padding-bottom: 6px;
+}
+
+.page-folio {
+  font-weight: 700;
+  color: #63503c;
+}
+
+.page-body {
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.page-chapter {
+  font-family: var(--serif, 'Instrument Serif', Georgia, serif);
+  font-size: 1.18rem;
+  line-height: 1.1;
+  color: #7f1d1d;
+  font-weight: 500;
+  margin: 0;
+}
+
+.page-sub {
+  font-family: var(--serif, 'Instrument Serif', serif);
+  font-size: 1.02rem;
+  color: #3b2818;
+  margin: 0;
+}
+
+.page-quote {
+  font-family: var(--serif, 'Instrument Serif', serif);
+  font-style: italic;
+  font-size: 0.92rem;
+  line-height: 1.28;
+  color: #4a3c2e;
+  margin: 0;
+}
+
+.page-lead {
+  font-size: 0.72rem;
+  line-height: 1.38;
+  color: #42362a;
+  margin: 0;
+}
+
+.page-text-sm {
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: #554433;
+  margin: 0;
+}
+
+/* Lignes de texte typographiques simulant l'encre imprimée */
+.page-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.pline {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(85, 68, 51, 0.16);
+}
+.pline-full { width: 100%; }
+.pline-mid { width: 84%; }
+.pline-short { width: 56%; }
+
+.page-ornament {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #c0392b;
+  opacity: 0.6;
+  padding-top: 4px;
+}
+
+/* --------------------------------------------------------------------------
+   6. COUVERTURE RIGIDE AVANT (OPENING HARDCOVER)
+   -------------------------------------------------------------------------- */
+.book-cover-hinge {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: var(--book-page-width);
+  height: var(--book-page-height);
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  z-index: 50;
+  animation: bookCoverOpening 2.1s cubic-bezier(0.25, 1, 0.35, 1) forwards;
+  animation-delay: 0.4s;
+}
+
+.book-front-cover {
+  position: absolute;
+  inset: -2px -2px -2px 0;
+  border-radius: 0 10px 10px 0;
+  transform-style: preserve-3d;
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.28);
+}
+
+/* Faces extérieure et intérieure de la couverture */
+.cover-side {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+/* Face Extérieure (Cuir maroquin carmin & dorure à chaud) */
+.cover-outside {
+  background: linear-gradient(145deg, #78191b 0%, #ac2727 42%, #561112 100%);
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+    inset -4px 0 12px rgba(0, 0, 0, 0.35);
+  animation: coverOutsideToggle 2.1s forwards;
+  animation-delay: 0.4s;
+}
+
+.cover-finish {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.12), transparent 60%);
+  pointer-events: none;
+}
+
+/* Cadre doré estampé sur la couverture */
+.cover-frame {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  border: 1.5px solid rgba(240, 201, 135, 0.65);
+  border-radius: 6px;
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  box-shadow: inset 0 0 0 1px rgba(240, 201, 135, 0.25);
+}
+
+.cover-brand {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #fcebd2;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.cover-emboss-symbol {
+  margin: 4px 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+.cover-main-title {
+  font-family: var(--serif, 'Instrument Serif', Georgia, serif);
+  font-size: 1.55rem;
+  line-height: 1.05;
+  color: #fff6e8;
+  font-weight: 400;
+  margin: 0;
+  text-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.5),
+    0 0 14px rgba(240, 201, 135, 0.35);
+}
+
+.cover-main-title em {
+  color: #f7d59b;
+  font-style: italic;
+  display: block;
+}
+
+.cover-sub {
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(247, 235, 215, 0.85);
+}
+
+/* Épaisseur visible du carton de couverture */
+.cover-edge-thickness {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 4px;
+  height: 100%;
+  background: #3b0a0b;
+  border-radius: 0 2px 2px 0;
+}
+
+/* Face Intérieure (Papier de garde / Flyleaf avec motifs africains) */
+.cover-inside {
+  background-color: #f4ecd9;
+  background-image: linear-gradient(135deg, #f4ecd9 0%, #e8ddc4 100%);
+  border-radius: 10px 0 0 10px;
+  padding: 24px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 4px solid #6b1718; /* Rembordage cuir */
+  box-shadow: inset 0 0 18px rgba(100, 75, 45, 0.18);
+  transform: rotateY(180deg);
+  opacity: 0;
+  animation: coverInsideToggle 2.1s forwards;
+  animation-delay: 0.4s;
+}
+
+.endpaper-pattern {
+  position: absolute;
+  inset: 12px;
+  border: 1px solid rgba(160, 110, 60, 0.2);
+  border-radius: 4px;
+  background-image: radial-gradient(rgba(140, 30, 30, 0.08) 1.5px, transparent 0);
+  background-size: 12px 12px;
+}
+
+.endpaper-seal {
+  position: relative;
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  color: #7f1d1d;
+  font-weight: 700;
+  text-align: center;
+  opacity: 0.75;
+}
+
+/* --------------------------------------------------------------------------
+   7. FEUILLES TOURNANTES (FEUILLETAGE 3D NATUREL ET CONTINU)
+   -------------------------------------------------------------------------- */
+.turning-leaves-container {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: var(--book-page-width);
+  height: var(--book-page-height);
+  transform-style: preserve-3d;
+  pointer-events: none;
+  z-index: 25;
+}
+
+/* Structure d'une feuille tournante */
+.leaf {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* Enveloppe de courbure papier */
+.leaf-curl-wrap {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform-origin: left center;
+}
+
+/* Faces de la feuille : 100% OPAQUES, aucune transparence */
+.leaf-face {
+  position: absolute;
+  inset: 0;
+  background-color: #fcf9f2 !important;
+  background-image: linear-gradient(135deg, #fdfaf3 0%, #f6eee0 75%, #ece1cd 100%) !important;
+  border-radius: 3px 5px 5px 3px;
+  box-shadow:
+    inset 0 0 0 1px rgba(120, 95, 65, 0.1),
+    0 4px 14px rgba(0, 0, 0, 0.08);
+  padding: 22px 20px 18px;
+}
+
+.leaf-front {
+  padding-left: 26px; /* Gouttière droite */
+  transform: rotateY(0deg);
+  opacity: 1;
+}
+
+.leaf-back {
+  padding-right: 26px; /* Gouttière gauche */
+  border-radius: 5px 3px 3px 5px;
+  transform: rotateY(180deg);
+  opacity: 0;
+}
+
+/* Empilement initial réaliste : Feuille 1 (z:30), Feuille 2 (z:20), Feuille 3 (z:10) */
+.leaf-1 {
+  z-index: 30;
+  animation: flipPageOne 8.4s cubic-bezier(0.35, 0, 0.25, 1) infinite;
+  animation-delay: 2.5s;
+}
+.leaf-1 .leaf-front {
+  animation: faceFrontToggle 8.4s infinite;
+  animation-delay: 2.5s;
+}
+.leaf-1 .leaf-back {
+  animation: faceBackToggle 8.4s infinite;
+  animation-delay: 2.5s;
+}
+
+.leaf-2 {
+  z-index: 20;
+  animation: flipPageTwo 8.4s cubic-bezier(0.35, 0, 0.25, 1) infinite;
+  animation-delay: 5.3s;
+}
+.leaf-2 .leaf-front {
+  animation: faceFrontToggle 8.4s infinite;
+  animation-delay: 5.3s;
+}
+.leaf-2 .leaf-back {
+  animation: faceBackToggle 8.4s infinite;
+  animation-delay: 5.3s;
+}
+
+.leaf-3 {
+  z-index: 10;
+  animation: flipPageThree 8.4s cubic-bezier(0.35, 0, 0.25, 1) infinite;
+  animation-delay: 8.1s;
+}
+.leaf-3 .leaf-front {
+  animation: faceFrontToggle 8.4s infinite;
+  animation-delay: 8.1s;
+}
+.leaf-3 .leaf-back {
+  animation: faceBackToggle 8.4s infinite;
+  animation-delay: 8.1s;
+}
+
+/* Bascule front/back garantie nette au passage de la tranche (90deg) */
+@keyframes faceFrontToggle {
+  0%, 10% { opacity: 1; }
+  11.5%, 40% { opacity: 0; }
+  44%, 100% { opacity: 1; }
+}
+
+@keyframes faceBackToggle {
+  0%, 10% { opacity: 0; }
+  11.5%, 40% { opacity: 1; }
+  44%, 100% { opacity: 0; }
+}
+
+/* Bascule des faces de la couverture lors de l'ouverture */
+@keyframes coverOutsideToggle {
+  0%, 48% { opacity: 1; }
+  52%, 100% { opacity: 0; }
+}
+
+@keyframes coverInsideToggle {
+  0%, 48% { opacity: 0; }
+  52%, 100% { opacity: 1; }
+}
+
+/* --------------------------------------------------------------------------
+   8. KEYFRAMES HERO SECTION
+   -------------------------------------------------------------------------- */
+/* Respiration flottante lente du livre */
+@keyframes bookBreathingFloat {
+  0%, 100% {
+    transform: rotateX(20deg) rotateY(-18deg) rotateZ(-1.5deg) translateY(0);
+  }
+  50% {
+    transform: rotateX(21.5deg) rotateY(-17deg) rotateZ(-0.5deg) translateY(-8px);
+  }
+}
+
+/* Pulsation de l'ombre au sol */
+@keyframes bookShadowPulse {
+  0%, 100% {
+    transform: translateX(-50%) rotateX(82deg) scale(1);
+    opacity: 0.52;
+  }
+  50% {
+    transform: translateX(-50%) rotateX(82deg) scale(0.94);
+    opacity: 0.42;
+  }
+}
+
+/* Ouverture initiale de la couverture */
+@keyframes bookCoverOpening {
+  0% {
+    transform: rotateY(0deg);
+    z-index: 50;
+  }
+  48% {
+    z-index: 50;
+  }
+  65% {
+    transform: rotateY(-182deg);
+    z-index: 4;
+  }
+  85% {
+    transform: rotateY(-170deg);
+    z-index: 4;
+  }
+  100% {
+    transform: rotateY(-174deg);
+    z-index: 4;
+  }
+}
+
+/* Feuilletage Feuille 1 (Période 8.4s) — OPAQUE À 100% */
+@keyframes flipPageOne {
+  0% {
+    transform: rotateY(0deg);
+    z-index: 30;
+  }
+  11% {
+    transform: rotateY(-90deg) skewY(-2deg) scale(1.02);
+    z-index: 35;
+  }
+  22% {
+    transform: rotateY(-174deg);
+    z-index: 25;
+  }
+  33% {
+    transform: rotateY(-174deg);
+    z-index: 10;
+  }
+  /* Repasse sous la pile de droite de manière invisible */
+  42% {
+    transform: rotateY(-174deg);
+    z-index: 1;
+  }
+  46% {
+    transform: rotateY(0deg);
+    z-index: 1;
+  }
+  52% {
+    transform: rotateY(0deg);
+    z-index: 5;
+  }
+  100% {
+    transform: rotateY(0deg);
+    z-index: 30;
+  }
+}
+
+/* Feuilletage Feuille 2 (Période 8.4s) — OPAQUE À 100% */
+@keyframes flipPageTwo {
+  0% {
+    transform: rotateY(0deg);
+    z-index: 20;
+  }
+  11% {
+    transform: rotateY(-90deg) skewY(-2deg) scale(1.02);
+    z-index: 35;
+  }
+  22% {
+    transform: rotateY(-174deg);
+    z-index: 25;
+  }
+  33% {
+    transform: rotateY(-174deg);
+    z-index: 10;
+  }
+  42% {
+    transform: rotateY(-174deg);
+    z-index: 1;
+  }
+  46% {
+    transform: rotateY(0deg);
+    z-index: 1;
+  }
+  52% {
+    transform: rotateY(0deg);
+    z-index: 5;
+  }
+  100% {
+    transform: rotateY(0deg);
+    z-index: 20;
+  }
+}
+
+/* Feuilletage Feuille 3 (Période 8.4s) — OPAQUE À 100% */
+@keyframes flipPageThree {
+  0% {
+    transform: rotateY(0deg);
+    z-index: 10;
+  }
+  11% {
+    transform: rotateY(-90deg) skewY(-2deg) scale(1.02);
+    z-index: 35;
+  }
+  22% {
+    transform: rotateY(-174deg);
+    z-index: 25;
+  }
+  33% {
+    transform: rotateY(-174deg);
+    z-index: 10;
+  }
+  42% {
+    transform: rotateY(-174deg);
+    z-index: 1;
+  }
+  46% {
+    transform: rotateY(0deg);
+    z-index: 1;
+  }
+  52% {
+    transform: rotateY(0deg);
+    z-index: 5;
+  }
+  100% {
+    transform: rotateY(0deg);
+    z-index: 10;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   9. SPLASH SCREEN ÉDITORIAL AVEC CROISEMENT 3D
+   -------------------------------------------------------------------------- */
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(
+    circle at 50% 48%,
+    #131c2d 0%,
+    #0c131f 48%,
+    #05080e 100%
+  );
+  overflow: hidden;
+  transition: opacity 0.65s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.65s ease;
+  perspective: 1400px;
+}
+
+.splash-screen.fade-out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Décor étoilé / poussières d'or discrètes */
+.splash-backdrop {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(rgba(240, 201, 135, 0.15) 1px, transparent 0),
+    radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 0);
+  background-size: 48px 48px, 96px 96px;
+  background-position: 0 0, 24px 24px;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.splash-scene {
+  position: relative;
+  width: min(920px, 96vw);
+  height: min(520px, 75vh);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-style: preserve-3d;
+}
+
+/* Rigs des deux livres en 3D */
+.splash-book-rig {
+  position: absolute;
+  width: 175px;
+  height: 250px;
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+}
+
+/* Livre 1 (Rouge carmin / plat gauche) */
+.splash-book-left {
+  animation: splashBookLeftCross 2.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Livre 2 (Ivoire/sable / plat droit) */
+.splash-book-right {
+  animation: splashBookRightCross 2.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Volume physique 3D d'un livre du splash */
+.splash-book-3d {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  box-shadow: 0 24px 44px rgba(0, 0, 0, 0.45);
+  border-radius: 6px 12px 12px 6px;
+}
+
+/* Couverture avant */
+.sp-cover-front {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transform: translateZ(12px);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
+.sp-cover-border {
+  height: 100%;
+  border: 1px solid rgba(240, 201, 135, 0.5);
+  border-radius: 6px;
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+}
+
+.sp-red {
+  background: linear-gradient(135deg, #7c191a 0%, #b22d2c 48%, #571213 100%);
+}
+
+.sp-ivory {
+  background: linear-gradient(135deg, #ede2cb 0%, #d8c39e 52%, #b3976c 100%);
+}
+
+.sp-cover-back {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  transform: translateZ(-12px);
+}
+.sp-red-dark { background: #3b090a; }
+.sp-ivory-dark { background: #7c6443; }
+
+/* Tranche des pages des livres splash */
+.sp-tranche-right {
+  position: absolute;
+  top: 0;
+  right: -12px;
+  width: 24px;
+  height: 100%;
+  background: repeating-linear-gradient(
+    to bottom,
+    #cfc0a3 0px,
+    #cfc0a3 1px,
+    #faf4e8 1px,
+    #faf4e8 3px
+  );
+  transform-origin: left center;
+  transform: rotateY(90deg);
+  box-shadow: inset -2px 0 6px rgba(0,0,0,0.25);
+}
+
+.sp-tranche-top {
+  position: absolute;
+  top: -12px;
+  left: 0;
+  width: 100%;
+  height: 24px;
+  background: repeating-linear-gradient(
+    to right,
+    #cfc0a3 0px,
+    #cfc0a3 1px,
+    #faf4e8 1px,
+    #faf4e8 3px
+  );
+  transform-origin: bottom center;
+  transform: rotateX(90deg);
+}
+
+.sp-spine {
+  position: absolute;
+  top: 0;
+  left: -12px;
+  width: 24px;
+  height: 100%;
+  border-radius: 4px 0 0 4px;
+  transform-origin: right center;
+  transform: rotateY(-90deg);
+}
+.sp-red-spine { background: linear-gradient(180deg, #5b1213, #8f2324, #440c0d); }
+.sp-ivory-spine { background: linear-gradient(180deg, #947a54, #cfb78f, #755f3f); }
+
+/* Typographie des couvertures splash */
+.sp-mark {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #fcebd2;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+.sp-mark.sp-dark { color: #2d261e; text-shadow: none; }
+
+.sp-icon {
+  margin: 4px 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.sp-title {
+  font-family: var(--serif, 'Instrument Serif', Georgia, serif);
+  font-size: 0.98rem;
+  line-height: 1.12;
+  color: #fffaf0;
+}
+.sp-title.sp-dark { color: #352a1e; }
+
+/* Révélation de la marque TOWBAM au centre */
+.splash-brand {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  z-index: 50;
+  opacity: 0;
+  animation: splashBrandReveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: 1.25s;
+  pointer-events: none;
+}
+
+.splash-emblem {
+  margin-bottom: 12px;
+  filter: drop-shadow(0 6px 18px rgba(192, 57, 43, 0.35));
+}
+
+.splash-wordmark {
+  font-family: var(--serif, 'Instrument Serif', Georgia, serif);
+  font-size: clamp(2.4rem, 6.5vw, 4.4rem);
+  letter-spacing: -0.04em;
+  color: #faf5eb;
+  margin: 0;
+  line-height: 1;
+  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
+}
+
+.splash-tagline {
+  font-size: clamp(0.85rem, 2vw, 1.05rem);
+  letter-spacing: 0.04em;
+  color: rgba(245, 238, 224, 0.9);
+  margin: 8px 0 0 0;
+}
+
+/* Trajectoire 3D du Livre 1 (Gauche -> Devant -> Stabilisation gauche dégagée) */
+@keyframes splashBookLeftCross {
+  0% {
+    opacity: 0;
+    transform: translate3d(-85vw, 30px, 120px) rotateX(18deg) rotateY(-40deg) rotateZ(14deg) scale(0.8);
+  }
+  24% {
+    opacity: 1;
+  }
+  50% {
+    /* Croisement au centre au PREMIER PLAN (devant la caméra) */
+    transform: translate3d(35px, -15px, 95px) rotateX(10deg) rotateY(-10deg) rotateZ(-2deg) scale(1.05);
+  }
+  75% {
+    /* Stabilisation à gauche dégageant le centre pour le logo */
+    transform: translate3d(-210px, -8px, 35px) rotateX(8deg) rotateY(-22deg) rotateZ(-5deg) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(-210px, -8px, 35px) rotateX(8deg) rotateY(-22deg) rotateZ(-5deg) scale(1);
+  }
+}
+
+/* Trajectoire 3D du Livre 2 (Droite -> Arrière-plan -> Stabilisation droite dégagée) */
+@keyframes splashBookRightCross {
+  0% {
+    opacity: 0;
+    transform: translate3d(85vw, -25px, -100px) rotateX(-14deg) rotateY(42deg) rotateZ(-14deg) scale(0.8);
+  }
+  24% {
+    opacity: 1;
+  }
+  50% {
+    /* Croisement au centre à l'ARRIÈRE-PLAN */
+    transform: translate3d(-35px, 15px, -70px) rotateX(-8deg) rotateY(14deg) rotateZ(4deg) scale(0.92);
+  }
+  75% {
+    /* Stabilisation à droite dégageant le centre pour le logo */
+    transform: translate3d(210px, 8px, -20px) rotateX(-6deg) rotateY(24deg) rotateZ(6deg) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(210px, 8px, -20px) rotateX(-6deg) rotateY(24deg) rotateZ(6deg) scale(1);
+  }
+}
+
+/* Révélation du logo TOWBAM */
+@keyframes splashBrandReveal {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -38%) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   10. RESPONSIVE DESIGN (320px à 1280px+)
+   -------------------------------------------------------------------------- */
+/* Tablettes et écrans intermédiaires */
+@media (max-width: 1024px) {
+  :root {
+    --book-page-width: 175px;
+    --book-page-height: 260px;
+    --book-spine-width: 20px;
+  }
+  .book-stage {
+    min-height: 420px;
+  }
+  .splash-book-rig {
+    width: 145px;
+    height: 210px;
+  }
+  @keyframes splashBookLeftCross {
+    0% { opacity: 0; transform: translate3d(-90vw, 25px, 90px) scale(0.75); }
+    50% { transform: translate3d(20px, -12px, 70px) scale(0.95); }
+    100% { opacity: 1; transform: translate3d(-160px, -6px, 25px) scale(0.9); }
+  }
+  @keyframes splashBookRightCross {
+    0% { opacity: 0; transform: translate3d(90vw, -20px, -80px) scale(0.75); }
+    50% { transform: translate3d(-20px, 12px, -50px) scale(0.85); }
+    100% { opacity: 1; transform: translate3d(160px, 6px, -15px) scale(0.9); }
+  }
+}
+
+/* Smartphones grands et tablettes portrait (max 768px) */
+@media (max-width: 768px) {
+  :root {
+    --book-page-width: 142px;
+    --book-page-height: 215px;
+    --book-spine-width: 18px;
+  }
+  .book-stage {
+    min-height: 360px;
+    max-width: 100%;
+    margin-top: 10px;
+    perspective: 1100px;
+  }
+  .book-ambient-glow {
+    width: 280px;
+    height: 280px;
+  }
+  .book-ambient-ring {
+    width: 260px;
+    height: 260px;
+  }
+  .book-ground-shadow {
+    width: 320px;
+    height: 55px;
+    bottom: -32px;
+  }
+  .bed-surface-left,
+  .bed-surface-right,
+  .leaf-face {
+    padding: 14px 12px 10px;
+  }
+  .bed-surface-left,
+  .leaf-back {
+    padding-right: 18px;
+  }
+  .bed-surface-right,
+  .leaf-front {
+    padding-left: 18px;
+  }
+  .cover-outside,
+  .cover-inside {
+    padding: 14px 12px;
+  }
+  .cover-main-title {
+    font-size: 1.15rem;
+  }
+  .page-chapter {
+    font-size: 0.95rem;
+  }
+  .page-quote {
+    font-size: 0.78rem;
+  }
+  .page-lead,
+  .page-text-sm {
+    font-size: 0.65rem;
+    line-height: 1.25;
+  }
+  .splash-book-rig {
+    width: 120px;
+    height: 175px;
+  }
+  @keyframes splashBookLeftCross {
+    0% {
+      opacity: 0;
+      transform: translate3d(-90vw, 30px, 80px) rotateX(15deg) rotateY(-35deg) scale(0.7);
+    }
+    50% {
+      transform: translate3d(15px, -10px, 60px) rotateX(8deg) rotateY(-10deg) scale(0.9);
+    }
+    100% {
+      opacity: 1;
+      transform: translate3d(-110px, 45px, 20px) rotateX(6deg) rotateY(-18deg) scale(0.85);
+    }
+  }
+  @keyframes splashBookRightCross {
+    0% {
+      opacity: 0;
+      transform: translate3d(90vw, -20px, -60px) rotateX(-12deg) rotateY(35deg) scale(0.7);
+    }
+    50% {
+      transform: translate3d(-15px, 10px, -45px) rotateX(-6deg) rotateY(12deg) scale(0.8);
+    }
+    100% {
+      opacity: 1;
+      transform: translate3d(110px, 45px, -15px) rotateX(-4deg) rotateY(18deg) scale(0.85);
+    }
+  }
+}
+
+/* Smartphones standard (max 480px) */
+@media (max-width: 480px) {
+  :root {
+    --book-page-width: 128px;
+    --book-page-height: 195px;
+    --book-spine-width: 16px;
+  }
+  .book-stage {
+    min-height: 310px;
+  }
+  .book-ground-shadow {
+    width: 270px;
+    height: 48px;
+    bottom: -26px;
+  }
+  .cover-main-title {
+    font-size: 1.02rem;
+  }
+  .cover-frame {
+    padding: 10px 8px;
+  }
+  .splash-book-rig {
+    width: 100px;
+    height: 148px;
+  }
+  .splash-brand {
+    top: 40%;
+    width: 90%;
+  }
+  @keyframes splashBookLeftCross {
+    0% { opacity: 0; transform: translate3d(-90vw, 20px, 60px) scale(0.65); }
+    50% { transform: translate3d(10px, -8px, 45px) scale(0.8); }
+    100% { opacity: 1; transform: translate3d(-85px, 65px, 15px) scale(0.78); }
+  }
+  @keyframes splashBookRightCross {
+    0% { opacity: 0; transform: translate3d(90vw, -15px, -45px) scale(0.65); }
+    50% { transform: translate3d(-10px, 8px, -35px) scale(0.72); }
+    100% { opacity: 1; transform: translate3d(85px, 65px, -12px) scale(0.78); }
+  }
+}
+
+/* Smartphones très étroits (320px à 360px) */
+@media (max-width: 360px) {
+  :root {
+    --book-page-width: 112px;
+    --book-page-height: 172px;
+    --book-spine-width: 14px;
+  }
+  .book-stage {
+    min-height: 270px;
+  }
+  .book-ambient-glow {
+    width: 220px;
+    height: 220px;
+  }
+  .book-ground-shadow {
+    width: 230px;
+    height: 40px;
+    bottom: -22px;
+  }
+  .bed-surface-left,
+  .bed-surface-right,
+  .leaf-face {
+    padding: 10px 8px 8px;
+  }
+  .bed-surface-left,
+  .leaf-back {
+    padding-right: 14px;
+  }
+  .bed-surface-right,
+  .leaf-front {
+    padding-left: 14px;
+  }
+  .page-chapter {
+    font-size: 0.82rem;
+  }
+  .page-quote {
+    font-size: 0.68rem;
+  }
+  .page-lines {
+    gap: 3px;
+  }
+  .pline {
+    height: 2px;
+  }
+  .splash-book-rig {
+    width: 86px;
+    height: 128px;
+  }
+  @keyframes splashBookLeftCross {
+    0% { opacity: 0; transform: translate3d(-90vw, 15px, 40px) scale(0.55); }
+    50% { transform: translate3d(8px, -6px, 30px) scale(0.7); }
+    100% { opacity: 1; transform: translate3d(-70px, 60px, 10px) scale(0.68); }
+  }
+  @keyframes splashBookRightCross {
+    0% { opacity: 0; transform: translate3d(90vw, -12px, -30px) scale(0.55); }
+    50% { transform: translate3d(-8px, 6px, -20px) scale(0.62); }
+    100% { opacity: 1; transform: translate3d(70px, 60px, -8px) scale(0.68); }
+  }
+}
+
+/* --------------------------------------------------------------------------
+   11. ACCESSIBILITÉ & PREFERS-REDUCED-MOTION
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .book-3d-rig,
+  .book-ground-shadow,
+  .book-cover-hinge,
+  .leaf,
+  .leaf-curl-wrap,
+  .leaf-front,
+  .leaf-back,
+  .cover-outside,
+  .cover-inside,
+  .splash-book-left,
+  .splash-book-right,
+  .splash-brand {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Livre statique élégamment ouvert */
+  .book-cover-hinge {
+    transform: rotateY(-174deg) !important;
+    z-index: 4 !important;
+  }
+
+  .cover-outside {
+    opacity: 0 !important;
+  }
+
+  .cover-inside {
+    opacity: 1 !important;
+  }
+
+  .leaf-1, .leaf-2, .leaf-3 {
+    display: none !important;
+  }
+
+  /* Pas de splash screen en mode réduit */
+  .splash-screen {
+    display: none !important;
+  }
+}
