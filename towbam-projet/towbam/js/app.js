@@ -423,7 +423,7 @@ V[''] = () => `
   <div class="w">
     <section class="hero">
       <div class="hero-copy">
-        <span class="pill">● Une nouvelle maison pour les histoires</span>
+        <span class="pill"> Une nouvelle maison pour les histoires</span>
         <h1>Des histoires <em>qui méritent d’être lues</em></h1>
         <p class="lead">TOWBAM réunit les lecteurs et les auteurs africains autour d’une plateforme claire, crédible et visuellement premium pour découvrir, soutenir et faire grandir les talents.</p>
         <div class="hero-cta">
